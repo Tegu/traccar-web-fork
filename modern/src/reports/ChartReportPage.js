@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
+import moment from 'moment';
 import {
   FormControl, InputLabel, Select, MenuItem,
 } from '@mui/material';
 import {
-  CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+  CartesianGrid, Scatter, ScatterChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import ReportFilter from './components/ReportFilter';
 import { formatTime } from '../common/util/formatter';
@@ -51,7 +52,7 @@ const ChartReportPage = () => {
       const formattedPositions = positions.map((position) => {
         const data = { ...position, ...position.attributes };
         const formatted = {};
-        formatted.fixTime = formatTime(position.fixTime, 'time', hours12);
+        formatted.fixTime = moment(position.fixTime).unix();
         Object.keys(data).filter((key) => !['id', 'deviceId'].includes(key)).forEach((key) => {
           const value = data[key];
           if (typeof value === 'number') {
@@ -116,18 +117,27 @@ const ChartReportPage = () => {
       {items.length > 0 && (
         <div className={classes.chart}>
           <ResponsiveContainer>
-            <LineChart
-              data={items}
+            <ScatterChart
               margin={{
                 top: 10, right: 40, left: 0, bottom: 10,
               }}
             >
-              <XAxis dataKey="fixTime" />
-              <YAxis type="number" tickFormatter={(value) => value.toFixed(2)} domain={[minValue - valueRange / 5, maxValue + valueRange / 5]} />
+              <XAxis
+                type="number"
+                dataKey="fixTime"
+                tickFormatter={(value) => formatTime(value, 'time', hours12)}
+                domain={['auto', 'auto']}
+              />
+              <YAxis
+                type="number"
+                dataKey={type}
+                tickFormatter={(value) => value.toFixed(2)}
+                domain={[minValue - valueRange / 5, maxValue + valueRange / 5]}
+              />
               <CartesianGrid strokeDasharray="3 3" />
-              <Tooltip formatter={(value, key) => [value, positionAttributes[key]?.name || key]} />
-              <Line type="monotone" dataKey={type} />
-            </LineChart>
+              <Tooltip formatter={(value, key) => [key === 'fixTime' ? formatTime(value, 'time', hours12) : value, positionAttributes[key]?.name || key]} />
+              <Scatter data={items} line fill="#3d89c1" />
+            </ScatterChart>
           </ResponsiveContainer>
         </div>
       )}
